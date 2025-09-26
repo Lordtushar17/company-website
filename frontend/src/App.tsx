@@ -18,6 +18,8 @@ import ContactPage from "./pages/ContactPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 
+import ProtectedRoute from "./auth/ProtectedRoute";
+
 const Home: React.FC = () => (
   <>
     <HeroSection />
@@ -40,9 +42,14 @@ function App() {
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/admin/login" element={<AdminLogin/>} />
-        <Route path="/admin" element={<AdminDashboard/>} />
-        {/* Optional: catch-all to Home or a 404 */}
-        {/* <Route path="*" element={<Home/>} /> */}
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute>
+              <AdminDashboard/>
+            </ProtectedRoute>
+            } 
+        />
       </Routes>
 
       <Footer />
