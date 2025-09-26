@@ -15,6 +15,8 @@ import ClientsSection from "./components/ClientsSection";
 // pages
 import ProductsPage from "./pages/ProductsPage";
 import ContactPage from "./pages/ContactPage";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const Home: React.FC = () => (
   <>
@@ -37,6 +39,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/admin/login" element={<AdminLogin/>} />
+        <Route path="/admin" element={<AdminDashboard/>} />
+        {/* Optional: catch-all to Home or a 404 */}
+        {/* <Route path="*" element={<Home/>} /> */}
       </Routes>
 
       <Footer />
