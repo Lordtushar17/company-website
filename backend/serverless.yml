@@ -1,0 +1,11 @@
+service: my-serverless-service
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: ap-south-1
+
+functions:
+  hello:
+    handler: handler.hello
+    

@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -16,7 +16,7 @@ import ClientsSection from "./components/ClientsSection";
 import ProductsPage from "./pages/ProductsPage";
 import ContactPage from "./pages/ContactPage";
 import AdminLogin from "./pages/AdminLogin";
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboard from "./adminpage/AdminDashboard";
 
 import ProtectedRoute from "./auth/ProtectedRoute";
 
@@ -33,9 +33,15 @@ const Home: React.FC = () => (
 );
 
 function App() {
+
+  const location = useLocation();
+  const showHeader = !(
+    location.pathname === "/admin" || location.pathname.startsWith("/admin/")
+  ) || location.pathname === "/admin/login";
+
   return (
     <>
-      <Header />
+      {showHeader && <Header />}
 
       <Routes>
         <Route path="/" element={<Home />} />
