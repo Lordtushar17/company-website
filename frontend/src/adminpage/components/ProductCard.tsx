@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { Product } from "../types/product";
+import { resolveImageKeys } from "../../api/images";
 
 export default function ProductCard({
   product,
@@ -11,7 +13,24 @@ export default function ProductCard({
   onEdit: (p: Product) => void;
   onDelete: (id: string) => void;
 }) {
-  const hero = product.images?.[0];
+  const [signed, setSigned] = useState<Record<string, string>>({});
+
+  // Turn any S3 keys into signed URLs
+  useEffect(() => {
+    const keys = (product.images || []).filter((s) => !/^https?:\/\//i.test(s));
+    if (!keys.length) {
+      setSigned({});
+      return;
+    }
+    resolveImageKeys(keys)
+      .then(setSigned)
+      .catch(() => setSigned({}));
+  }, [product.images]);
+
+  const srcFor = (s: string) => (/^https?:\/\//i.test(s) ? s : signed[s] || "");
+
+  const heroRaw = product.images?.[0];
+  const hero = heroRaw ? srcFor(heroRaw) : "";
 
   return (
     <div className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden border flex flex-col">
@@ -52,15 +71,21 @@ export default function ProductCard({
 
           {/* Thumb strip becomes horizontally scrollable on small screens, wraps on large */}
           <div className="mt-3 flex gap-2 overflow-x-auto lg:flex-wrap">
-            {product.images?.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                alt={`${product.title} ${i}`}
-                className="h-16 w-28 sm:h-20 sm:w-32 object-cover rounded-md border flex-none"
-                loading="lazy"
-              />
-            ))}
+            {product.images?.map((img, i) => {
+              const src = srcFor(img);
+              return (
+                <img
+                  key={i}
+                  src={src || undefined}
+                  alt={`${product.title} ${i}`}
+                  className="h-16 w-28 sm:h-20 sm:w-32 object-cover rounded-md border flex-none"
+                  loading="lazy"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+                  }}
+                />
+              );
+            })}
           </div>
         </details>
 

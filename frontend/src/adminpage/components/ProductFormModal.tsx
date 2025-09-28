@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Product } from "../types/product";
+import { presignUpload, uploadToS3Presigned } from "../../api/uploads";
 
 export default function ProductFormModal({
   open,
@@ -19,6 +20,9 @@ export default function ProductFormModal({
   const [longDesc, setLong] = useState(product?.longDesc ?? "");
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [urlInput, setUrlInput] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Sync local form state whenever the modal opens or the product changes
   useEffect(() => {
@@ -28,6 +32,7 @@ export default function ProductFormModal({
       setLong(product?.longDesc ?? "");
       setImages(product?.images ?? []);
       setUrlInput("");
+      setUploading(false);
     }
   }, [open, product]);
 
@@ -35,7 +40,7 @@ export default function ProductFormModal({
 
   const addImage = () => {
     if (!urlInput.trim()) return;
-    setImages([...images, urlInput.trim()]);
+    setImages((prev) => [...prev, urlInput.trim()]);
     setUrlInput("");
   };
 
@@ -43,11 +48,48 @@ export default function ProductFormModal({
     setImages((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  const pickLocalAndUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const onLocalFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+
+      // If we're editing, use the real productid; if creating, drop into a staging folder.
+      const forProductId = product?.productid || "staged";
+
+      // 1) Ask backend for a presign
+      const ps = await presignUpload({
+        productId: forProductId,
+        filename: file.name,
+        contentType: file.type || "application/octet-stream",
+      });
+
+      // 2) POST the file to S3 with the presigned form-data
+      await uploadToS3Presigned(ps.upload.url, ps.upload.fields, file);
+
+      // 3) Store the S3 key (NOT a URL) — we’ll resolve it to a URL when rendering.
+      setImages((prev) => [...prev, ps.key]);
+    } catch (err) {
+      console.error(err);
+      alert("Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const save = () => {
     if (!title.trim()) return;
     onSave({ title, shortDesc, longDesc, images });
     onClose();
   };
+
+  const isHttpUrl = (s: string) => /^https?:\/\//i.test(s);
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -85,7 +127,17 @@ export default function ProductFormModal({
             value={longDesc}
             onChange={(e) => setLong(e.target.value)}
           />
+
           <div>
+            {/* Hidden file input for local uploads */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onLocalFileChosen}
+            />
+
             <div className="flex gap-2 mb-2">
               <input
                 className="flex-1 border rounded-md px-3 py-2"
@@ -94,20 +146,40 @@ export default function ProductFormModal({
                 onChange={(e) => setUrlInput(e.target.value)}
               />
               <button
+                type="button"
                 onClick={addImage}
                 className="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
               >
                 Add URL
               </button>
+
+              <button
+                type="button"
+                onClick={pickLocalAndUpload}
+                disabled={uploading}
+                className="px-3 py-2 rounded-md bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-60"
+                title="Upload from your computer"
+              >
+                {uploading ? "Uploading…" : "Add from computer"}
+              </button>
             </div>
+
             <div className="flex gap-2 flex-wrap">
               {images.map((img, i) => (
                 <div key={i} className="relative">
-                  <img
-                    src={img}
-                    alt={`img-${i}`}
-                    className="h-24 w-32 object-cover border rounded-md"
-                  />
+                  {isHttpUrl(img) ? (
+                    <img
+                      src={img}
+                      alt={`img-${i}`}
+                      className="h-24 w-32 object-cover border rounded-md"
+                    />
+                  ) : (
+                    <div className="h-24 w-32 border rounded-md bg-gray-50 grid place-items-center p-2 text-[11px] text-gray-600 break-words">
+                      <span className="px-2 py-1 bg-gray-200 rounded">
+                        {img.split("/").slice(-1)[0]}
+                      </span>
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={() => removeImage(i)}
@@ -132,6 +204,7 @@ export default function ProductFormModal({
           <button
             onClick={save}
             className="px-4 py-2 rounded-md bg-green-600 text-white hover:bg-green-700"
+            disabled={uploading}
           >
             Save
           </button>
