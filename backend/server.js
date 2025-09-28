@@ -97,7 +97,7 @@ app.post("/api/login", loginLimiter, async (req, res) => {
     sameSite: "lax",
     secure: COOKIE_SECURE,
     path: "/",
-    maxAge: 24 * 60 *60 * 1 * 1000, // 24 hours for demo; adjust as needed
+    maxAge: 2 * 60 *60 * 1 * 1000, // 2 hours for demo; adjust as needed
   });
   return res.json({ success: true });
 });

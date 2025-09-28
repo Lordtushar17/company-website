@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Product } from "../types/product";
 
 export default function ProductFormModal({
@@ -20,12 +20,27 @@ export default function ProductFormModal({
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [urlInput, setUrlInput] = useState("");
 
+  // Sync local form state whenever the modal opens or the product changes
+  useEffect(() => {
+    if (open) {
+      setTitle(product?.title ?? "");
+      setShort(product?.shortDesc ?? "");
+      setLong(product?.longDesc ?? "");
+      setImages(product?.images ?? []);
+      setUrlInput("");
+    }
+  }, [open, product]);
+
   if (!open) return null;
 
   const addImage = () => {
     if (!urlInput.trim()) return;
     setImages([...images, urlInput.trim()]);
     setUrlInput("");
+  };
+
+  const removeImage = (idx: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const save = () => {
@@ -44,6 +59,7 @@ export default function ProductFormModal({
           <button
             onClick={onClose}
             className="h-8 w-8 rounded-full bg-gray-100 hover:bg-gray-200 grid place-items-center"
+            aria-label="Close"
           >
             ×
           </button>
@@ -86,12 +102,21 @@ export default function ProductFormModal({
             </div>
             <div className="flex gap-2 flex-wrap">
               {images.map((img, i) => (
-                <img
-                  key={i}
-                  src={img}
-                  alt={`img-${i}`}
-                  className="h-24 w-32 object-cover border rounded-md"
-                />
+                <div key={i} className="relative">
+                  <img
+                    src={img}
+                    alt={`img-${i}`}
+                    className="h-24 w-32 object-cover border rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(i)}
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-600 text-white text-xs"
+                    aria-label="Remove image"
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
             </div>
           </div>
