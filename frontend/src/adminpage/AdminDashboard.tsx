@@ -1,3 +1,4 @@
+// src/admin/AdminDashboard.tsx
 import { useEffect, useState } from "react";
 import { Product } from "./types/product";
 import Layout from "./components/Layout";
@@ -8,31 +9,24 @@ import AnalyticsSection from "./components/AnalyticsSection";
 import LogsSection from "./components/LogsSection";
 import { ProductsAPI } from "../api/products";
 
-const initialProducts: Product[] = [
-  {
-    productid: "p-001",
-    title: "Coolant Conditioning System",
-    shortDesc: "Compact, energy-efficient coolant purifier.",
-    longDesc: "Long description here…",
-    images: [
-      "https://via.placeholder.com/800x1000?text=Coolant+Hero",
-      "https://via.placeholder.com/800x1000?text=Coolant+Side",
-    ],
-  },
-  {
-    productid: "p-002",
-    title: "Hydraulic Power Pack",
-    shortDesc: "Robust and maintenance-free hydraulic unit.",
-    longDesc: "Another long description here…",
-    images: [
-      "https://via.placeholder.com/800x1000?text=Hydraulic+Hero",
-      "https://via.placeholder.com/800x1000?text=Hydraulic+Detail",
-    ],
-  },
-];
+// --- helpers to map API <-> UI shapes ---
+function normalizeProduct(api: any): Product {
+  return {
+    productid: api.productId ?? api.productid ?? "",
+    title: api.title ?? "",
+    shortDesc: api.shortDescription ?? api.shortDesc ?? "",
+    longDesc: api.description ?? api.longDesc ?? "",
+    images: Array.isArray(api.images) ? api.images : api.imageUrl ? [api.imageUrl] : [],
+  };
+}
+
+function unwrapItem(res: any) {
+  // Accept either { item: {...} } or the item itself
+  return res?.item ?? res;
+}
 
 export default function AdminDashboard() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -48,16 +42,12 @@ export default function AdminDashboard() {
     (async () => {
       try {
         setLoading(true);
-        const data = await ProductsAPI.list();
-        if (Array.isArray(data) && data.length) {
-          setProducts(data);
-        } else {
-          // keep initial placeholders if table is empty
-          setProducts([]);
-        }
+        const data = await ProductsAPI.list(); // expect array of API items
+        const normalized = Array.isArray(data) ? data.map(normalizeProduct) : [];
+        setProducts(normalized);
         setError(null);
       } catch (e: any) {
-        setError(e.message || "Failed to load products");
+        setError(e?.message || "Failed to load products");
       } finally {
         setLoading(false);
       }
@@ -83,19 +73,38 @@ export default function AdminDashboard() {
 
       if (formMode === "create") {
         const generated =
-          (globalThis.crypto && "randomUUID" in globalThis.crypto)
-            ? globalThis.crypto.randomUUID()
+          typeof globalThis !== "undefined" &&
+          globalThis.crypto &&
+          "randomUUID" in globalThis.crypto
+            ? (globalThis.crypto as any).randomUUID()
             : `p-${Date.now()}`;
 
-        const newProduct: Product = { productid: generated, ...data };
-        const created = await ProductsAPI.create(newProduct);
+        const toSend = {
+          productId: generated,
+          title: data.title,
+          shortDescription: data.shortDesc,
+          description: data.longDesc,
+          images: data.images,
+          imageUrl: data.images?.[0] || "",
+        };
+
+        const res = await ProductsAPI.create(toSend);
+        const created = normalizeProduct(unwrapItem(res));
         setProducts((prev) => [created, ...prev]);
       } else if (editingId) {
-        const updated = await ProductsAPI.update(editingId, data);
+        const toSend = {
+          title: data.title,
+          shortDescription: data.shortDesc,
+          description: data.longDesc,
+          images: data.images,
+          imageUrl: data.images?.[0] || "",
+        };
+        const res = await ProductsAPI.update(editingId, toSend);
+        const updated = normalizeProduct(unwrapItem(res));
         setProducts((prev) => prev.map((p) => (p.productid === editingId ? updated : p)));
       }
     } catch (e: any) {
-      setError(e.message || "Save failed");
+      setError(e?.message || "Save failed");
     } finally {
       setSaving(false);
     }
@@ -107,7 +116,7 @@ export default function AdminDashboard() {
       await ProductsAPI.remove(id);
       setProducts((prev) => prev.filter((p) => p.productid !== id));
     } catch (e: any) {
-      setError(e.message || "Delete failed");
+      setError(e?.message || "Delete failed");
     }
   };
 

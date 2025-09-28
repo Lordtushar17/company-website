@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Product } from "../types/product";
 import { resolveImageKeys } from "../../api/images";
 
@@ -14,8 +14,9 @@ export default function ProductCard({
   onDelete: (id: string) => void;
 }) {
   const [signed, setSigned] = useState<Record<string, string>>({});
+  const [heroIdx, setHeroIdx] = useState(0);
 
-  // Turn any S3 keys into signed URLs
+  // Resolve S3 keys -> signed URLs
   useEffect(() => {
     const keys = (product.images || []).filter((s) => !/^https?:\/\//i.test(s));
     if (!keys.length) {
@@ -27,17 +28,34 @@ export default function ProductCard({
       .catch(() => setSigned({}));
   }, [product.images]);
 
+  // Reset hero index if product changes or images length changes
+  useEffect(() => {
+    setHeroIdx(0);
+  }, [product.productid, product.images?.length]);
+
   const srcFor = (s: string) => (/^https?:\/\//i.test(s) ? s : signed[s] || "");
 
-  const heroRaw = product.images?.[0];
-  const hero = heroRaw ? srcFor(heroRaw) : "";
+  // Build the list of resolved sources (empty string when not yet resolved)
+  const resolvedImages = useMemo(
+    () => (product.images || []).map((img) => srcFor(img)),
+    [product.images, signed]
+  );
+
+  const hasImages = resolvedImages.length > 0;
+  const hero = hasImages ? resolvedImages[heroIdx] : "";
+
+  const next = () =>
+    setHeroIdx((i) => (resolvedImages.length ? (i + 1) % resolvedImages.length : 0));
+  const prev = () =>
+    setHeroIdx((i) =>
+      resolvedImages.length ? (i - 1 + resolvedImages.length) % resolvedImages.length : 0
+    );
 
   return (
     <div className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden border flex flex-col">
-      {/* Responsive hero image with dynamic height via breakpoints */}
+      {/* Hero area */}
       {hero && (
-        <div className="w-full overflow-hidden">
-          {/* Use aspect ratio on small screens; scale height up on larger screens */}
+        <div className="relative w-full overflow-hidden">
           <div className="aspect-[16/10] sm:aspect-[16/9] md:h-48 lg:h-56 xl:h-64 md:aspect-auto">
             <img
               src={hero}
@@ -49,11 +67,42 @@ export default function ProductCard({
               }}
             />
           </div>
+
+          {resolvedImages.length > 1 && (
+            <>
+              {/* Prev / Next */}
+              <button
+                onClick={prev}
+                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 text-white px-2 py-1 text-sm hover:bg-black/60"
+                aria-label="Previous image"
+              >
+                ‹
+              </button>
+              <button
+                onClick={next}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 text-white px-2 py-1 text-sm hover:bg-black/60"
+                aria-label="Next image"
+              >
+                ›
+              </button>
+
+              {/* Dots */}
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+                {resolvedImages.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`h-2 w-2 rounded-full ${
+                      i === heroIdx ? "bg-white" : "bg-white/50"
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 
       <div className="p-4 flex-1 flex flex-col">
-        {/* Dynamic text sizing and truncation for tidy cards */}
         <h2 className="text-lg sm:text-xl font-semibold mb-1 line-clamp-2">
           {product.title}
         </h2>
@@ -69,24 +118,39 @@ export default function ProductCard({
             {product.longDesc}
           </p>
 
-          {/* Thumb strip becomes horizontally scrollable on small screens, wraps on large */}
-          <div className="mt-3 flex gap-2 overflow-x-auto lg:flex-wrap">
-            {product.images?.map((img, i) => {
-              const src = srcFor(img);
-              return (
-                <img
+          {/* Thumbnails */}
+          {resolvedImages.length > 0 && (
+            <div className="mt-3 flex gap-2 overflow-x-auto lg:flex-wrap">
+              {resolvedImages.map((src, i) => (
+                <button
                   key={i}
-                  src={src || undefined}
-                  alt={`${product.title} ${i}`}
-                  className="h-16 w-28 sm:h-20 sm:w-32 object-cover rounded-md border flex-none"
-                  loading="lazy"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
-                  }}
-                />
-              );
-            })}
-          </div>
+                  type="button"
+                  onClick={() => setHeroIdx(i)}
+                  className={`border rounded-md overflow-hidden flex-none outline-none ${
+                    i === heroIdx ? "ring-2 ring-blue-500" : "ring-0"
+                  }`}
+                  title={`Image ${i + 1}`}
+                >
+                  {src ? (
+                    <img
+                      src={src}
+                      alt={`${product.title} ${i}`}
+                      className="h-16 w-28 sm:h-20 sm:w-32 object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.visibility =
+                          "hidden";
+                      }}
+                    />
+                  ) : (
+                    <div className="h-16 w-28 sm:h-20 sm:w-32 bg-gray-100 grid place-items-center text-xs text-gray-500">
+                      …
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </details>
 
         <div className="mt-auto">
@@ -96,7 +160,6 @@ export default function ProductCard({
             </span>
           </div>
 
-          {/* Buttons stack on small screens, align in a row on md+ */}
           <div className="flex flex-col sm:flex-row justify-between mt-3 gap-2">
             <button
               onClick={() => onPreview(product.productid)}

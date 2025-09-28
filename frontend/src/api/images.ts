@@ -8,8 +8,19 @@ export async function resolveImageKeys(keys: string[]) {
     body: JSON.stringify({ keys }),
   });
   if (!res.ok) throw new Error(await res.text());
-  const data = await res.json() as { urls: { key: string; url?: string }[] };
+  const data = (await res.json()) as { urls: { key: string; url?: string }[] };
   const map: Record<string, string> = {};
   for (const { key, url } of data.urls) if (url) map[key] = url;
   return map;
+}
+
+export async function deleteImages(keys: string[]) {
+  if (!keys.length) return;
+  const res = await fetch(`${API_BASE}/upload/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ keys }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }

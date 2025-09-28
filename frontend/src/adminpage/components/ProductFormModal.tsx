@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Product } from "../types/product";
+// If this file lives in src/components/, your api folder is usually ../api/
+// adjust if your structure is different.
 import { presignUpload, uploadToS3Presigned } from "../../api/uploads";
+import { deleteImages } from "../../api/images";
 
 export default function ProductFormModal({
   open,
@@ -44,10 +47,6 @@ export default function ProductFormModal({
     setUrlInput("");
   };
 
-  const removeImage = (idx: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== idx));
-  };
-
   const pickLocalAndUpload = () => {
     fileInputRef.current?.click();
   };
@@ -59,20 +58,20 @@ export default function ProductFormModal({
     try {
       setUploading(true);
 
-      // If we're editing, use the real productid; if creating, drop into a staging folder.
+      // If editing, upload under real productId; if creating, use a temp prefix
       const forProductId = product?.productid || "staged";
 
-      // 1) Ask backend for a presign
+      // 1) Presign
       const ps = await presignUpload({
         productId: forProductId,
         filename: file.name,
         contentType: file.type || "application/octet-stream",
       });
 
-      // 2) POST the file to S3 with the presigned form-data
+      // 2) Upload to S3 with form-data
       await uploadToS3Presigned(ps.upload.url, ps.upload.fields, file);
 
-      // 3) Store the S3 key (NOT a URL) — we’ll resolve it to a URL when rendering.
+      // 3) Save S3 key to local state (persisted on Save)
       setImages((prev) => [...prev, ps.key]);
     } catch (err) {
       console.error(err);
@@ -90,6 +89,20 @@ export default function ProductFormModal({
   };
 
   const isHttpUrl = (s: string) => /^https?:\/\//i.test(s);
+
+  const removeImage = async (idx: number) => {
+    const key = images[idx];
+    // Optimistic UI
+    setImages((prev) => prev.filter((_, i) => i !== idx));
+    try {
+      if (key && !isHttpUrl(key)) {
+        await deleteImages([key]); // delete from S3 if it is an S3 key (not a URL)
+      }
+    } catch (e) {
+      console.error("Delete failed:", e);
+      // optional: show a toast or revert local state
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">

@@ -1,88 +1,133 @@
 // src/api/products.ts
-import type { Product } from "../adminpage/types/product";
+const API_BASE = process.env.REACT_APP_API_BASE!;
+if (!API_BASE) {
+  // Helps fail fast in dev if the env var isn't set
+  // (remove if you don't want runtime guardrails)
+  // eslint-disable-next-line no-console
+  console.warn("REACT_APP_API_BASE is not set");
+}
 
-const API_BASE = process.env.REACT_APP_API_BASE || "";
-const ID_TOKEN = process.env.REACT_APP_ID_TOKEN || "";
-
-type BackendProduct = {
-  productId: string;
-  title?: string;
-  shortDescription?: string;
-  description?: string;
-  imageUrl?: string;
-  createdAt?: string;
-  updatedAt?: string;
+type ApiProduct = {
+  productId?: string;
+  title: string;
+  shortDescription: string;
+  description: string;
+  images?: string[];
+  imageUrl?: string; // optional convenience for first image
 };
 
-function headers(): Record<string, string> {
-  const h: Record<string, string> = { "Content-Type": "application/json" };
-  if (ID_TOKEN) h["Authorization"] = `Bearer ${ID_TOKEN}`;
-  return h;
-}
-
-function toBackend(p: Product): BackendProduct {
-  return {
-    productId: p.productid,
-    title: p.title ?? "",
-    shortDescription: p.shortDesc ?? "",
-    description: p.longDesc ?? "",
-    imageUrl: p.images?.[0] ?? "",
-  };
-}
-
-function fromBackend(b: BackendProduct): Product {
-  return {
-    productid: b.productId,
-    title: b.title || "",
-    shortDesc: b.shortDescription || "",
-    longDesc: b.description || "",
-    images: b.imageUrl ? [b.imageUrl] : [],
-  };
-}
-
-async function request<T = any>(path: string, init?: RequestInit): Promise<T> {
-  if (!API_BASE) throw new Error("REACT_APP_API_BASE is not set");
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers: { ...headers(), ...(init?.headers || {}) } });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`HTTP ${res.status} ${res.statusText}: ${text}`);
+// --- internal helper ---
+async function handle(resp: Response) {
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(text || `Request failed with ${resp.status}`);
   }
-  return (await res.json()) as T;
+  return resp.json();
 }
 
+// ---- object API expected by AdminDashboard ----
 export const ProductsAPI = {
-  async list(): Promise<Product[]> {
-    const items = await request<BackendProduct[]>("/products_info");
-    return (items || []).map(fromBackend);
+  async list(): Promise<ApiProduct[]> {
+    const r = await fetch(`${API_BASE}/products_info`, { method: "GET" });
+    return handle(r);
   },
-  async get(productid: string): Promise<Product> {
-    const b = await request<BackendProduct>(`/products_info/${encodeURIComponent(productid)}`);
-    return fromBackend(b);
+
+  async get(id: string): Promise<ApiProduct> {
+    const r = await fetch(`${API_BASE}/products_info/${encodeURIComponent(id)}`, {
+      method: "GET",
+    });
+    return handle(r);
   },
-  async create(p: Product): Promise<Product> {
-    const body = JSON.stringify(toBackend(p));
-    const res = await request<{ item: BackendProduct }>(`/products_info`, { method: "POST", body });
-    // Lambda returns { item, message }; fall back to echo if not present
-    const created = (res as any).item || toBackend(p);
-    return fromBackend(created);
+
+  async create(p: ApiProduct & { productId: string }): Promise<any> {
+    // Accepts backend field names already mapped by caller
+    const body = JSON.stringify({
+      productId: p.productId,
+      title: p.title,
+      shortDescription: p.shortDescription,
+      description: p.description,
+      images: Array.isArray(p.images) ? p.images : [],
+      imageUrl: p.imageUrl ?? (p.images?.[0] || ""),
+    });
+
+    const r = await fetch(`${API_BASE}/products_info`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+    });
+    return handle(r);
   },
-  async update(productid: string, patch: Omit<Product, "productid">): Promise<Product> {
-    // Backend PUT accepts partial; send only changed fields
-    const b = toBackend({ productid, ...patch } as Product);
-    const payload: Partial<BackendProduct> = {
-      title: b.title,
-      shortDescription: b.shortDescription,
-      description: b.description,
-      imageUrl: b.imageUrl,
-    };
-    const res = await request<{ item: BackendProduct }>(
-      `/products_info/${encodeURIComponent(productid)}`,
-      { method: "PUT", body: JSON.stringify(payload) }
-    );
-    const updated = (res as any).item || { ...b };
-    return fromBackend(updated);
+
+  async update(id: string, p: Partial<ApiProduct>): Promise<any> {
+    const body = JSON.stringify({
+      ...(p.title !== undefined ? { title: p.title } : {}),
+      ...(p.shortDescription !== undefined ? { shortDescription: p.shortDescription } : {}),
+      ...(p.description !== undefined ? { description: p.description } : {}),
+      ...(p.images !== undefined ? { images: p.images } : {}),
+      imageUrl:
+        p.imageUrl !== undefined
+          ? p.imageUrl
+          : Array.isArray(p.images) && p.images.length > 0
+          ? p.images[0]
+          : undefined,
+    });
+
+    const r = await fetch(`${API_BASE}/products_info/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body,
+    });
+    return handle(r);
   },
-  async remove(productid: string): Promise<void> {
-    await request(`/products_info/${encodeURIComponent(productid)}`, { method: "DELETE" });
+
+  async remove(id: string): Promise<any> {
+    const r = await fetch(`${API_BASE}/products_info/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    return handle(r);
   },
 };
+
+// ---- Back-compat named functions (optional) ----
+// These let you keep any old imports that used the previous function names.
+export async function createProduct(p: {
+  productId: string;
+  title: string;
+  shortDesc: string;
+  longDesc: string;
+  images: string[];
+}) {
+  return ProductsAPI.create({
+    productId: p.productId,
+    title: p.title,
+    shortDescription: p.shortDesc,
+    description: p.longDesc,
+    images: p.images,
+    imageUrl: p.images?.[0] || "",
+  });
+}
+
+export async function updateProduct(
+  productId: string,
+  p: { title: string; shortDesc: string; longDesc: string; images: string[] }
+) {
+  return ProductsAPI.update(productId, {
+    title: p.title,
+    shortDescription: p.shortDesc,
+    description: p.longDesc,
+    images: p.images,
+    imageUrl: p.images?.[0] || "",
+  });
+}
+
+export async function getProducts() {
+  return ProductsAPI.list();
+}
+
+export async function getProduct(id: string) {
+  return ProductsAPI.get(id);
+}
+
+export async function deleteProduct(id: string) {
+  return ProductsAPI.remove(id);
+}
