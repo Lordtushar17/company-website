@@ -9,12 +9,14 @@ export default function ProductFormModal({
   open,
   mode,
   product,
+  stagedProductId,
   onClose,
   onSave,
 }: {
   open: boolean;
   mode: "create" | "edit";
   product?: Product;
+  stagedProductId?: string;
   onClose: () => void;
   onSave: (data: Omit<Product, "productid">) => void;
 }) {
@@ -58,8 +60,10 @@ export default function ProductFormModal({
     try {
       setUploading(true);
 
-      // If editing, upload under real productId; if creating, use a temp prefix
-      const forProductId = product?.productid || "staged";
+      // Use the real product id when uploading:
+      // - if editing, upload under real productId
+      // - if creating, use the stagedProductId passed from parent
+      const forProductId = product?.productid || stagedProductId || "staged";
 
       // 1) Presign
       const ps = await presignUpload({
