@@ -18,7 +18,7 @@ const Header: React.FC = () => {
     const RO: typeof ResizeObserver | undefined = (window as any).ResizeObserver;
     let ro: ResizeObserver | null = null;
 
-    // ✅ capture the current element once to avoid ref drift in cleanup
+    
     const elem = headerRef.current;
     if (RO && elem) {
       ro = new RO(() => setHeaderHeight());
@@ -27,7 +27,7 @@ const Header: React.FC = () => {
 
     return () => {
       window.removeEventListener("resize", setHeaderHeight);
-      if (ro && elem) ro.unobserve(elem); // ✅ use captured element
+      if (ro && elem) ro.unobserve(elem); 
     };
   }, []);
 
