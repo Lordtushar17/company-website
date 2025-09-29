@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback  } from "react";
 import { Product } from "../types/product";
 import { resolveImageKeys } from "../../api/images";
 
@@ -33,13 +33,16 @@ export default function ProductCard({
     setHeroIdx(0);
   }, [product.productid, product.images?.length]);
 
-  const srcFor = (s: string) => (/^https?:\/\//i.test(s) ? s : signed[s] || "");
+// memoise srcFor so it has a stable identity and its dependency is tracked
+const srcFor = useCallback(
+  (s: string) => (/^https?:\/\//i.test(s) ? s : signed[s] || ""),
+  [signed]
+);
 
-  // Build the list of resolved sources (empty string when not yet resolved)
-  const resolvedImages = useMemo(
-    () => (product.images || []).map((img) => srcFor(img)),
-    [product.images, signed]
-  );
+const resolvedImages = useMemo(
+  () => (product.images || []).map((img) => srcFor(img)),
+  [product.images, srcFor]
+);
 
   const hasImages = resolvedImages.length > 0;
   const hero = hasImages ? resolvedImages[heroIdx] : "";

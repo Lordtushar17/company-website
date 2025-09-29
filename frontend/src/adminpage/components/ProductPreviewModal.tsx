@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Product } from "../types/product";
 import { resolveImageKeys } from "../../api/images";
 
@@ -16,7 +16,7 @@ export default function ProductPreviewModal({
   useEffect(() => {
     setImgIdx(0);
     setSigned({});
-  }, [product?.productid]);
+  }, [product]);
 
   // Resolve any S3 keys to signed URLs so images render correctly
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function ProductPreviewModal({
     resolveImageKeys(keys)
       .then(setSigned)
       .catch(() => setSigned({}));
-  }, [product?.images, product?.productid]);
+  }, [product]);
 
   // Build resolved image list (empty string while presigning)
   const resolvedImages = useMemo(() => {
@@ -38,7 +38,22 @@ export default function ProductPreviewModal({
     return imgs.map((img) =>
       /^https?:\/\//i.test(img) ? img : signed[img] || ""
     );
-  }, [product?.images, signed]);
+  }, [product, signed]);
+
+  // --- navigation helpers (memoized for stable deps) ---
+  const prevImg = useCallback(() => {
+    setImgIdx((i) =>
+      resolvedImages.length
+        ? (i - 1 + resolvedImages.length) % resolvedImages.length
+        : 0
+    );
+  }, [resolvedImages.length]);
+
+  const nextImg = useCallback(() => {
+    setImgIdx((i) =>
+      resolvedImages.length ? (i + 1) % resolvedImages.length : 0
+    );
+  }, [resolvedImages.length]);
 
   // Close on Esc, navigate with arrows
   useEffect(() => {
@@ -49,15 +64,7 @@ export default function ProductPreviewModal({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, resolvedImages.length]);
-
-  // --- navigation helpers ---
-  const prevImg = () =>
-    setImgIdx((i) =>
-      resolvedImages.length ? (i - 1 + resolvedImages.length) % resolvedImages.length : 0
-    );
-  const nextImg = () =>
-    setImgIdx((i) => (resolvedImages.length ? (i + 1) % resolvedImages.length : 0));
+  }, [onClose, prevImg, nextImg]);
 
   if (!product) return null;
 
