@@ -68,7 +68,7 @@ export default function Layout({
             {[
               { key: "products", label: "Products" },
               { key: "logs", label: "Logs" },
-              { key: "analytics", label: "Analytics" },
+              // { key: "analytics", label: "Analytics" },
             ].map((it) => (
               <button
                 key={it.key}

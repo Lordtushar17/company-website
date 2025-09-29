@@ -1,11 +1,9 @@
-// src/admin/AdminDashboard.tsx
 import { useEffect, useState } from "react";
 import { Product } from "./types/product";
 import Layout from "./components/Layout";
 import ProductCard from "./components/ProductCard";
 import ProductFormModal from "./components/ProductFormModal";
 import ProductPreviewModal from "./components/ProductPreviewModal";
-import AnalyticsSection from "./components/AnalyticsSection";
 import LogsSection from "./components/LogsSection";
 import { ProductsAPI } from "../api/products";
 
@@ -21,7 +19,6 @@ function normalizeProduct(api: any): Product {
 }
 
 function unwrapItem(res: any) {
-  // Accept either { item: {...} } or the item itself
   return res?.item ?? res;
 }
 
@@ -31,13 +28,10 @@ export default function AdminDashboard() {
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [section, setSection] = useState<"products" | "analytics" | "logs">("products");
+  const [section, setSection] = useState<"products" | "logs">("products");
 
-  // NEW: staged product id used for uploads when creating a new product
-  const [stagedId, setStagedId] = useState<string | null>(null);
-
-  const [loading, setLoading] = useState<boolean>(false);
-  const [saving, setSaving] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Load from API on mount
@@ -45,7 +39,7 @@ export default function AdminDashboard() {
     (async () => {
       try {
         setLoading(true);
-        const data = await ProductsAPI.list(); // expect array of API items
+        const data = await ProductsAPI.list();
         const normalized = Array.isArray(data) ? data.map(normalizeProduct) : [];
         setProducts(normalized);
         setError(null);
@@ -60,14 +54,6 @@ export default function AdminDashboard() {
   const startCreate = () => {
     setFormMode("create");
     setEditingId(null);
-    // generate a stable staged id for uploads (used by ProductFormModal)
-    const generated =
-      typeof globalThis !== "undefined" &&
-      globalThis.crypto &&
-      "randomUUID" in globalThis.crypto
-        ? (globalThis.crypto as any).randomUUID()
-        : `p-${Date.now()}`;
-    setStagedId(generated);
     setFormOpen(true);
   };
 
@@ -75,8 +61,6 @@ export default function AdminDashboard() {
     setFormMode("edit");
     setEditingId(p.productid);
     setFormOpen(true);
-    // clear any staged id (not used in edit)
-    setStagedId(null);
   };
 
   const saveProduct = async (data: Omit<Product, "productid">) => {
@@ -86,12 +70,11 @@ export default function AdminDashboard() {
 
       if (formMode === "create") {
         const generated =
-          stagedId ||
-          (typeof globalThis !== "undefined" &&
+          typeof globalThis !== "undefined" &&
           globalThis.crypto &&
           "randomUUID" in globalThis.crypto
             ? (globalThis.crypto as any).randomUUID()
-            : `p-${Date.now()}`);
+            : `p-${Date.now()}`;
 
         const toSend = {
           productId: generated,
@@ -105,8 +88,6 @@ export default function AdminDashboard() {
         const res = await ProductsAPI.create(toSend);
         const created = normalizeProduct(unwrapItem(res));
         setProducts((prev) => [created, ...prev]);
-        // we created using stagedId -> clear it (the modal onClose also clears it)
-        setStagedId(null);
       } else if (editingId) {
         const toSend = {
           title: data.title,
@@ -181,12 +162,7 @@ export default function AdminDashboard() {
             open={formOpen}
             mode={formMode}
             product={formMode === "edit" ? products.find((p) => p.productid === editingId) : undefined}
-            stagedProductId={formMode === "create" ? (stagedId ?? undefined) : undefined}
-            onClose={() => {
-              setFormOpen(false);
-              // clear staged id when modal closes
-              setStagedId(null);
-            }}
+            onClose={() => setFormOpen(false)}
             onSave={saveProduct}
           />
 
@@ -197,7 +173,6 @@ export default function AdminDashboard() {
         </>
       )}
 
-      {section === "analytics" && <AnalyticsSection />}
       {section === "logs" && <LogsSection />}
     </Layout>
   );

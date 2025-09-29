@@ -3,7 +3,6 @@ import { Product } from "../types/product";
 // If this file lives in src/components/, your api folder is usually ../api/
 // adjust if your structure is different.
 import { presignUpload, uploadToS3Presigned } from "../../api/uploads";
-import { deleteImages } from "../../api/images";
 
 export default function ProductFormModal({
   open,
@@ -94,18 +93,10 @@ export default function ProductFormModal({
 
   const isHttpUrl = (s: string) => /^https?:\/\//i.test(s);
 
-  const removeImage = async (idx: number) => {
-    const key = images[idx];
-    // Optimistic UI
+  // NOTE: no S3 call here; we only change the local list.
+  // AdminDashboard will delete removed S3 keys AFTER a successful Save.
+  const removeImage = (idx: number) => {
     setImages((prev) => prev.filter((_, i) => i !== idx));
-    try {
-      if (key && !isHttpUrl(key)) {
-        await deleteImages([key]); // delete from S3 if it is an S3 key (not a URL)
-      }
-    } catch (e) {
-      console.error("Delete failed:", e);
-      // optional: show a toast or revert local state
-    }
   };
 
   return (

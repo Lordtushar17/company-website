@@ -174,11 +174,20 @@ export default function ProductCard({
               Edit / Add Images
             </button>
             <button
-              onClick={() => onDelete(product.productid)}
-              className="px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 text-sm"
+                onClick={() => {
+                if (
+                window.confirm(
+                    `Are you sure you want to permanently delete the product "${product.title}"?\n\nThis will remove the product and all its images from the database. This action cannot be undone.`
+                    )
+                  ) {
+                onDelete(product.productid);
+                    }
+                    }}
+                className="px-3 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 text-sm"
             >
               Delete
             </button>
+
           </div>
         </div>
       </div>
