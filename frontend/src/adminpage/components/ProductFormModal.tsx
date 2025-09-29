@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Product } from "../types/product";
-// If this file lives in src/components/, your api folder is usually ../api/
-// adjust if your structure is different.
 import { presignUpload, uploadToS3Presigned } from "../../api/uploads";
 
 export default function ProductFormModal({
@@ -27,6 +25,9 @@ export default function ProductFormModal({
   const [uploading, setUploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // ✅ NEW: max size per image = 10 MB
+  const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
 
   // Sync local form state whenever the modal opens or the product changes
   useEffect(() => {
@@ -55,6 +56,18 @@ export default function ProductFormModal({
   const onLocalFileChosen = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // ✅ NEW: block individual files > 10 MB
+    if (file.size > MAX_IMAGE_BYTES) {
+      alert(
+        `This image is too large (${(file.size / (1024 * 1024)).toFixed(
+          2
+        )} MB). The maximum allowed per image is 10 MB.`
+      );
+      // reset the input so the same file can be re-selected after compression/resave
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
 
     try {
       setUploading(true);
