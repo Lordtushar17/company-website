@@ -11,6 +11,7 @@ import WeProvide from "./components/WeProvide";
 import ProductsSection from "./components/ProductsSection";
 import OurValues from "./components/OurValues";
 import ClientsSection from "./components/ClientsSection";
+import SiteNotice from "./components/SiteNotice";
 
 // pages
 import ProductsPage from "./pages/ProductsPage";
@@ -22,6 +23,7 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 
 const Home: React.FC = () => (
   <>
+    <SiteNotice />
     <HeroSection />
     <WhoWeAre />
     <StatsSection />

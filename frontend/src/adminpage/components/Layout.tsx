@@ -67,6 +67,7 @@ export default function Layout({
           <nav className="px-2 py-2 space-y-1 text-sm">
             {[
               { key: "products", label: "Products" },
+              { key: "notice", label: "Notice" },
               { key: "logs", label: "Logs" },
               // { key: "analytics", label: "Analytics" },
             ].map((it) => (

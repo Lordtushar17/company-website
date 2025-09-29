@@ -1,9 +1,40 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 
 const Header: React.FC = () => {
+  const headerRef = useRef<HTMLElement | null>(null);
+
+  // expose header height to CSS variable for other components (SiteNotice)
+  useEffect(() => {
+    function setHeaderHeight() {
+      const h = headerRef.current?.offsetHeight ?? 0;
+      document.documentElement.style.setProperty("--site-header-height", `${h}px`);
+    }
+
+    setHeaderHeight();
+    window.addEventListener("resize", setHeaderHeight);
+
+    // optionally observe header size changes (if content changes dynamically)
+    const RO: typeof ResizeObserver | undefined = (window as any).ResizeObserver;
+    let ro: ResizeObserver | null = null;
+
+    // ✅ capture the current element once to avoid ref drift in cleanup
+    const elem = headerRef.current;
+    if (RO && elem) {
+      ro = new RO(() => setHeaderHeight());
+      ro.observe(elem);
+    }
+
+    return () => {
+      window.removeEventListener("resize", setHeaderHeight);
+      if (ro && elem) ro.unobserve(elem); // ✅ use captured element
+    };
+  }, []);
+
   const [open, setOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<"home" | "about" | "products" | "contact">("home");
+  const [activeSection, setActiveSection] = useState<
+    "home" | "about" | "products" | "contact"
+  >("home");
   const location = useLocation();
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -30,27 +61,27 @@ const Header: React.FC = () => {
 
   // Scroll spy using IntersectionObserver for #about and #products sections on the home page
   useEffect(() => {
-    // Only run scroll spy when on the home route
     if (location.pathname !== "/") return;
 
     const options = {
       root: null,
       rootMargin: "0px",
-      threshold: [0.25, 0.5], // consider section visible when 25-50% is in view
+      threshold: [0.25, 0.5],
     };
 
     const callback: IntersectionObserverCallback = (entries) => {
       entries.forEach((entry) => {
         const id = entry.target.id;
-        if (entry.isIntersecting && (entry.intersectionRatio >= 0.25 || entry.intersectionRatio >= 0.5)) {
+        if (
+          entry.isIntersecting &&
+          (entry.intersectionRatio >= 0.25 || entry.intersectionRatio >= 0.5)
+        ) {
           if (id === "about") setActiveSection("about");
           if (id === "products") setActiveSection("products");
         } else {
-          // if scrolling out of observed sections and still on home, fallback to home
-          // We'll check if no observed sections are intersecting and set to home
           const all = document.querySelectorAll("#about, #products");
           const anyVisible = Array.from(all).some((el) => {
-            const r = el.getBoundingClientRect();
+            const r = (el as HTMLElement).getBoundingClientRect();
             return r.top < window.innerHeight && r.bottom > 0;
           });
           if (!anyVisible) setActiveSection("home");
@@ -58,7 +89,6 @@ const Header: React.FC = () => {
       });
     };
 
-    // create observer and observe targets
     observerRef.current = new IntersectionObserver(callback, options);
     const aboutEl = document.getElementById("about");
     const productsEl = document.getElementById("products");
@@ -78,10 +108,8 @@ const Header: React.FC = () => {
   const handleNavClick = (scrollToId?: string) => {
     setOpen(false);
     if (scrollToId) {
-      // navigate to home if needed first, then scroll after a small delay
       if (location.pathname !== "/") {
-        // navigate home by changing location hash — using Link/NavLink elsewhere handles actual nav;
-        // here we just ensure the page has time to render Home content before scrolling
+        // navigate to root first by setting hash; Home component will render
         window.location.hash = "/";
       }
       setTimeout(() => {
@@ -93,7 +121,10 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 w-full bg-gray-900 bg-opacity-70 text-white shadow-md z-50">
+    <header
+      ref={headerRef}
+      className="fixed top-0 left-0 w-full bg-gray-900 bg-opacity-70 text-white shadow-md z-50"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 md:h-16">
           {/* Left: logo */}
@@ -120,27 +151,36 @@ const Header: React.FC = () => {
                 <NavLink
                   to="/"
                   end
-                  onClick={() => window.scrollTo({ top: 0, left: 0, behavior: "smooth" })}
-                  className={() => (activeSection === "home" ? "text-orange-500" : "hover:text-orange-500")}
+                  onClick={() =>
+                    window.scrollTo({ top: 0, left: 0, behavior: "smooth" })
+                  }
+                  className={() =>
+                    activeSection === "home"
+                      ? "text-orange-500"
+                      : "hover:text-orange-500"
+                  }
                 >
                   Home
                 </NavLink>
               </li>
 
               <li>
-                {/* About uses manual scroll; active style from scroll-spy */}
                 <button
                   onClick={() => {
-                    // ensure we're on home then scroll to about
                     if (location.pathname !== "/") {
-                      // navigate to home route first
                       window.location.hash = "/";
                     }
                     setTimeout(() => {
-                      document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
+                      document.getElementById("about")?.scrollIntoView({
+                        behavior: "smooth",
+                      });
                     }, 120);
                   }}
-                  className={activeSection === "about" ? "text-orange-500" : "hover:text-orange-500"}
+                  className={
+                    activeSection === "about"
+                      ? "text-orange-500"
+                      : "hover:text-orange-500"
+                  }
                 >
                   About Us
                 </button>
@@ -149,7 +189,11 @@ const Header: React.FC = () => {
               <li>
                 <NavLink
                   to="/products"
-                  className={() => (activeSection === "products" || location.pathname === "/products" ? "text-orange-400" : "hover:text-orange-500")}
+                  className={() =>
+                    activeSection === "products" || location.pathname === "/products"
+                      ? "text-orange-400"
+                      : "hover:text-orange-500"
+                  }
                 >
                   Products
                 </NavLink>
@@ -158,7 +202,9 @@ const Header: React.FC = () => {
               <li>
                 <NavLink
                   to="/contact"
-                  className={({ isActive }) => (isActive ? "text-orange-400" : "hover:text-orange-500")}
+                  className={({ isActive }) =>
+                    isActive ? "text-orange-400" : "hover:text-orange-500"
+                  }
                 >
                   Contact
                 </NavLink>
@@ -175,7 +221,9 @@ const Header: React.FC = () => {
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-200 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-400"
             >
               <svg
-                className={`h-6 w-6 transform transition-transform duration-200 ${open ? "rotate-45" : "rotate-0"}`}
+                className={`h-6 w-6 transform transition-transform duration-200 ${
+                  open ? "rotate-45" : "rotate-0"
+                }`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -194,7 +242,9 @@ const Header: React.FC = () => {
 
       {/* Mobile menu panel */}
       <div
-        className={`md:hidden transition-transform duration-200 ease-in-out origin-top ${open ? "max-h-screen" : "max-h-0"} overflow-hidden`}
+        className={`md:hidden transition-transform duration-200 ease-in-out origin-top ${
+          open ? "max-h-screen" : "max-h-0"
+        } overflow-hidden`}
         aria-hidden={!open}
       >
         <div className="px-4 pt-4 pb-6 bg-gray-900 bg-opacity-95 border-t border-gray-800">
@@ -206,7 +256,13 @@ const Header: React.FC = () => {
                 onClick={() => {
                   handleNavClick();
                 }}
-                className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium ${isActive || activeSection === "home" ? "text-orange-500" : "text-gray-200 hover:text-orange-500"}`}
+                className={({ isActive }) =>
+                  `block px-3 py-2 rounded-md text-base font-medium ${
+                    isActive || activeSection === "home"
+                      ? "text-orange-500"
+                      : "text-gray-200 hover:text-orange-500"
+                  }`
+                }
               >
                 Home
               </NavLink>
@@ -215,14 +271,19 @@ const Header: React.FC = () => {
             <li>
               <button
                 onClick={() => {
-                  // close and scroll to about
                   setOpen(false);
                   if (location.pathname !== "/") window.location.hash = "/";
                   setTimeout(() => {
-                    document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
+                    document.getElementById("about")?.scrollIntoView({
+                      behavior: "smooth",
+                    });
                   }, 120);
                 }}
-                className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${activeSection === "about" ? "text-orange-500" : "text-gray-200 hover:text-orange-500"}`}
+                className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium ${
+                  activeSection === "about"
+                    ? "text-orange-500"
+                    : "text-gray-200 hover:text-orange-500"
+                }`}
               >
                 About Us
               </button>
@@ -232,7 +293,13 @@ const Header: React.FC = () => {
               <NavLink
                 to="/products"
                 onClick={() => setOpen(false)}
-                className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium ${isActive || activeSection === "products" ? "text-orange-400" : "text-gray-200 hover:text-orange-500"}`}
+                className={({ isActive }) =>
+                  `block px-3 py-2 rounded-md text-base font-medium ${
+                    isActive || activeSection === "products"
+                      ? "text-orange-400"
+                      : "text-gray-200 hover:text-orange-500"
+                  }`
+                }
               >
                 Products
               </NavLink>
@@ -242,7 +309,11 @@ const Header: React.FC = () => {
               <NavLink
                 to="/contact"
                 onClick={() => setOpen(false)}
-                className={({ isActive }) => `block px-3 py-2 rounded-md text-base font-medium ${isActive ? "text-orange-400" : "text-gray-200 hover:text-orange-500"}`}
+                className={({ isActive }) =>
+                  `block px-3 py-2 rounded-md text-base font-medium ${
+                    isActive ? "text-orange-400" : "text-gray-200 hover:text-orange-500"
+                  }`
+                }
               >
                 Contact
               </NavLink>

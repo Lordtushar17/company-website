@@ -35,5 +35,23 @@
   font-style: normal;
 }
 
+/* === Offset the page content so hero starts below header + notice === */
+:root {
+  /* fallbacks: 0 if variables not yet set */
+  --site-header-height: 0px;
+  --site-notice-height: 0px;
+}
+
+body {
+  /* existing styles … */
+
+  /* push page content below header + notice */
+  padding-top: calc(var(--site-header-height) + var(--site-notice-height));
+}
 
 
+/* === One-direction ticker animation === */
+@keyframes siteNoticeTicker {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}

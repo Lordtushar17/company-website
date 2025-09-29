@@ -6,6 +6,7 @@ import ProductFormModal from "./components/ProductFormModal";
 import ProductPreviewModal from "./components/ProductPreviewModal";
 import LogsSection from "./components/LogsSection";
 import { ProductsAPI } from "../api/products";
+import NoticeSection from "./components/NoticeSection";
 
 // --- helpers to map API <-> UI shapes ---
 function normalizeProduct(api: any): Product {
@@ -28,7 +29,7 @@ export default function AdminDashboard() {
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [section, setSection] = useState<"products" | "logs">("products");
+  const [section, setSection] = useState<"products" | "logs" | "notice">("products");
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -171,6 +172,13 @@ export default function AdminDashboard() {
             onClose={() => setPreviewId(null)}
           />
         </>
+      )}
+
+
+      {section === "notice" && (
+        <div>
+          <NoticeSection />
+      </div>
       )}
 
       {section === "logs" && <LogsSection />}
