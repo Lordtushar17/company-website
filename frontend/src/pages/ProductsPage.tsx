@@ -74,7 +74,6 @@ const ProductsPage: React.FC = () => {
 
   // ===== Resolve first image per product for the grid =====
   useEffect(() => {
-    // build a worklist of keys that need presigning
     const toResolve: string[] = [];
     const direct: Record<string, string> = {};
     for (const p of products) {
@@ -87,13 +86,11 @@ const ProductsPage: React.FC = () => {
       }
     }
 
-    // set direct URLs immediately
     if (Object.keys(direct).length) {
       setThumbs((prev) => ({ ...prev, ...direct }));
     }
 
     if (toResolve.length === 0) {
-      // if there are products without images, clear their thumb
       const blank: Record<string, string> = {};
       for (const p of products) {
         if (!p.images?.length) blank[p.productid] = "";
@@ -108,7 +105,6 @@ const ProductsPage: React.FC = () => {
     resolveImageKeys(toResolve)
       .then((map) => {
         if (cancelled) return;
-        // map keys back to product ids (only for first image)
         const updates: Record<string, string> = {};
         for (const p of products) {
           const first = p.images?.[0];
@@ -121,9 +117,7 @@ const ProductsPage: React.FC = () => {
           setThumbs((prev) => ({ ...prev, ...updates }));
         }
       })
-      .catch(() => {
-        // swallow; leave blank thumbnails for keys that failed
-      });
+      .catch(() => {});
 
     return () => {
       cancelled = true;
@@ -167,7 +161,7 @@ const ProductsPage: React.FC = () => {
     return imgs.map((img) => (isHttpUrl(img) ? img : modalSigned[img] || ""));
   }, [selectedProduct, modalSigned]);
 
-  // ===== Scroll to top on initial mount (kept from your original) =====
+  // ===== Scroll to top on initial mount =====
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
   }, []);
@@ -315,16 +309,23 @@ const ProductsPage: React.FC = () => {
                     </button>
                   )}
 
-                  <img
-                    src={modalImages[slideIndex] || ""}
-                    alt={`${selectedProduct.title} view ${slideIndex + 1}`}
-                    className="max-h-[60vh] md:max-h-[70vh] w-auto max-w-full object-contain bg-white"
-                    loading="lazy"
-                    decoding="async"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
-                    }}
-                  />
+                  {/* ✅ Render <img> only if we have a non-empty URL */}
+                  {modalImages[slideIndex] ? (
+                    <img
+                      src={modalImages[slideIndex]!}
+                      alt={`${selectedProduct.title} view ${slideIndex + 1}`}
+                      className="max-h-[60vh] md:max-h-[70vh] w-auto max-w-full object-contain bg-white"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-[40vh] bg-gray-100 grid place-items-center text-gray-500">
+                      Loading image…
+                    </div>
+                  )}
 
                   {selectedProduct.images.length > 1 && (
                     <button
@@ -367,7 +368,7 @@ const ProductsPage: React.FC = () => {
                 )}
               </div>
 
-              {/* RIGHT: details */}
+              {/* RIGHT: details — preserve original formatting */}
               <aside className="md:w-1/3 w-full md:max-h-[80vh] max-h-[40vh] overflow-y-auto p-6 flex flex-col">
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-3x1 font-bold">{selectedProduct.title}</h3>
@@ -380,8 +381,10 @@ const ProductsPage: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="prose prose-sm max-w-none text-gray-700 text-justify font-bold">
-                  <p>{selectedProduct.longDesc}</p>
+                <div className="prose prose-sm max-w-none text-gray-800">
+                  <div className="whitespace-pre-wrap leading-relaxed">
+                    {selectedProduct.longDesc}
+                  </div>
                 </div>
               </aside>
             </div>

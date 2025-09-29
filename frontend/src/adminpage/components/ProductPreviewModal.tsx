@@ -69,10 +69,7 @@ export default function ProductPreviewModal({
       onClick={onClose}
     >
       {/* backdrop */}
-      <div
-        className="fixed inset-0 bg-black/60"
-        aria-hidden="true"
-      />
+      <div className="fixed inset-0 bg-black/60" aria-hidden="true" />
 
       {/* panel */}
       <div
@@ -164,8 +161,11 @@ export default function ProductPreviewModal({
               </button>
             </div>
 
-            <div className="prose prose-sm max-w-none text-gray-700 text-justify font-bold">
-              <p>{product.longDesc}</p>
+            {/* Preserve original spacing, newlines, and bullet characters */}
+            <div className="prose prose-sm max-w-none text-gray-800">
+              <div className="whitespace-pre-wrap leading-relaxed">
+                {product.longDesc}
+              </div>
             </div>
           </aside>
         </div>
