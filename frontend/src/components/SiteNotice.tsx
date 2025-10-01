@@ -110,7 +110,7 @@ export default function SiteNotice() {
         {/* Ticker viewport */}
         <div
           ref={viewportRef}
-          className="relative overflow-hidden h-8 sm:h-9 md:h-10 flex items-center"
+          className="relative overflow-hidden h-8 sm:h-9 md:h-12 flex items-center"
         >
           {/* Animated track: two copies side-by-side (seamless) */}
           <div

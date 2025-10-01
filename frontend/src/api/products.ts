@@ -1,4 +1,3 @@
-// src/api/products.ts
 const API_BASE = process.env.REACT_APP_API_BASE!;
 if (!API_BASE) {
   // Helps fail fast in dev if the env var isn't set
@@ -14,6 +13,7 @@ type ApiProduct = {
   description: string;
   images?: string[];
   imageUrl?: string; // optional convenience for first image
+  orderId?: number; // NEW: optional ordering field
 };
 
 // --- internal helper ---
@@ -48,6 +48,7 @@ export const ProductsAPI = {
       description: p.description,
       images: Array.isArray(p.images) ? p.images : [],
       imageUrl: p.imageUrl ?? (p.images?.[0] || ""),
+      ...(typeof p.orderId !== "undefined" ? { orderId: p.orderId } : {}),
     });
 
     const r = await fetch(`${API_BASE}/products_info`, {
@@ -70,6 +71,7 @@ export const ProductsAPI = {
           : Array.isArray(p.images) && p.images.length > 0
           ? p.images[0]
           : undefined,
+      ...(typeof p.orderId !== "undefined" ? { orderId: p.orderId } : {}),
     });
 
     const r = await fetch(`${API_BASE}/products_info/${encodeURIComponent(id)}`, {
@@ -96,6 +98,7 @@ export async function createProduct(p: {
   shortDesc: string;
   longDesc: string;
   images: string[];
+  orderId?: number;
 }) {
   return ProductsAPI.create({
     productId: p.productId,
@@ -104,12 +107,13 @@ export async function createProduct(p: {
     description: p.longDesc,
     images: p.images,
     imageUrl: p.images?.[0] || "",
+    ...(typeof p.orderId !== "undefined" ? { orderId: p.orderId } : {}),
   });
 }
 
 export async function updateProduct(
   productId: string,
-  p: { title: string; shortDesc: string; longDesc: string; images: string[] }
+  p: { title: string; shortDesc: string; longDesc: string; images: string[]; orderId?: number }
 ) {
   return ProductsAPI.update(productId, {
     title: p.title,
@@ -117,6 +121,7 @@ export async function updateProduct(
     description: p.longDesc,
     images: p.images,
     imageUrl: p.images?.[0] || "",
+    ...(typeof p.orderId !== "undefined" ? { orderId: p.orderId } : {}),
   });
 }
 

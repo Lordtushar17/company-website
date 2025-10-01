@@ -16,6 +16,8 @@ function normalizeProduct(api: any): Product {
     shortDesc: api.shortDescription ?? api.shortDesc ?? "",
     longDesc: api.description ?? api.longDesc ?? "",
     images: Array.isArray(api.images) ? api.images : api.imageUrl ? [api.imageUrl] : [],
+    orderId:
+      typeof api.orderId !== "undefined" && api.orderId !== null ? Number(api.orderId) : undefined,
   };
 }
 
@@ -35,6 +37,12 @@ export default function AdminDashboard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const sortByOrder = (a: Product, b: Product) => {
+    const A = typeof a.orderId === "number" ? a.orderId : Number.MAX_SAFE_INTEGER;
+    const B = typeof b.orderId === "number" ? b.orderId : Number.MAX_SAFE_INTEGER;
+    return A - B;
+  };
+
   // Load from API on mount
   useEffect(() => {
     (async () => {
@@ -42,6 +50,7 @@ export default function AdminDashboard() {
         setLoading(true);
         const data = await ProductsAPI.list();
         const normalized = Array.isArray(data) ? data.map(normalizeProduct) : [];
+        normalized.sort(sortByOrder);
         setProducts(normalized);
         setError(null);
       } catch (e: any) {
@@ -77,7 +86,7 @@ export default function AdminDashboard() {
             ? (globalThis.crypto as any).randomUUID()
             : `p-${Date.now()}`;
 
-        const toSend = {
+        const toSend: any = {
           productId: generated,
           title: data.title,
           shortDescription: data.shortDesc,
@@ -86,20 +95,24 @@ export default function AdminDashboard() {
           imageUrl: data.images?.[0] || "",
         };
 
+        if (typeof data.orderId !== "undefined") toSend.orderId = data.orderId;
+
         const res = await ProductsAPI.create(toSend);
         const created = normalizeProduct(unwrapItem(res));
-        setProducts((prev) => [created, ...prev]);
+        setProducts((prev) => [created, ...prev].sort(sortByOrder));
       } else if (editingId) {
-        const toSend = {
+        const toSend: any = {
           title: data.title,
           shortDescription: data.shortDesc,
           description: data.longDesc,
           images: data.images,
           imageUrl: data.images?.[0] || "",
         };
+        if (typeof data.orderId !== "undefined") toSend.orderId = data.orderId;
+
         const res = await ProductsAPI.update(editingId, toSend);
         const updated = normalizeProduct(unwrapItem(res));
-        setProducts((prev) => prev.map((p) => (p.productid === editingId ? updated : p)));
+        setProducts((prev) => prev.map((p) => (p.productid === editingId ? updated : p)).sort(sortByOrder));
       }
     } catch (e: any) {
       setError(e?.message || "Save failed");
@@ -174,11 +187,10 @@ export default function AdminDashboard() {
         </>
       )}
 
-
       {section === "notice" && (
         <div>
           <NoticeSection />
-      </div>
+        </div>
       )}
 
       {section === "logs" && <LogsSection />}

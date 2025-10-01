@@ -23,10 +23,11 @@ export default function ProductFormModal({
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [urlInput, setUrlInput] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [orderId, setOrderId] = useState<number | "">(product?.orderId ?? "");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // ✅ NEW: max size per image = 10 MB
+  //  NEW: max size per image = 10 MB
   const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB
 
   // Sync local form state whenever the modal opens or the product changes
@@ -36,6 +37,7 @@ export default function ProductFormModal({
       setShort(product?.shortDesc ?? "");
       setLong(product?.longDesc ?? "");
       setImages(product?.images ?? []);
+      setOrderId(product?.orderId ?? "");
       setUrlInput("");
       setUploading(false);
     }
@@ -100,7 +102,16 @@ export default function ProductFormModal({
 
   const save = () => {
     if (!title.trim()) return;
-    onSave({ title, shortDesc, longDesc, images });
+    const payload: any = {
+      title,
+      shortDesc,
+      longDesc,
+      images,
+    };
+    if (orderId !== "" && orderId !== null && typeof orderId !== "undefined") {
+      payload.orderId = Number(orderId);
+    }
+    onSave(payload);
     onClose();
   };
 
@@ -141,6 +152,23 @@ export default function ProductFormModal({
             value={shortDesc}
             onChange={(e) => setShort(e.target.value)}
           />
+
+          {/* Order ID input */}
+          <input
+            type="number"
+            min={1}
+            className="w-full border rounded-md px-3 py-2"
+            placeholder="Order ID (1 = top). Leave blank for default ordering."
+            value={orderId === "" ? "" : String(orderId)}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "") return setOrderId("");
+              const n = parseInt(v, 10);
+              if (isNaN(n)) return;
+              setOrderId(n);
+            }}
+          />
+
           <textarea
             rows={6}
             className="w-full border rounded-md px-3 py-2"
