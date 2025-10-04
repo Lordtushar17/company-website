@@ -1,4 +1,4 @@
-const BASE = process.env.REACT_APP_API_URL || "http://localhost:4000";
+const BASE = process.env.REACT_APP_API_URL || "";
 
 export async function apiLogin(username: string, password: string) {
   const res = await fetch(`${BASE}/api/login`, {

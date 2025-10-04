@@ -23,16 +23,18 @@ export default function ProtectedRoute({ children }: { children: ReactNode }) {
   }, []);
 
   if (status === "checking") {
-  return (
-    <div className="fixed inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="h-10 w-10 rounded-full border-4 border-gray-200 border-t-gray-600 animate-spin" />
-    </div>
+    return (
+      <div className="fixed inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="h-10 w-10 rounded-full border-4 border-gray-200 border-t-gray-600 animate-spin" />
+      </div>
     );
-    }
-
-
+  }
 
   if (status === "unauthenticated") {
+    // If we're already on the login page, don't redirect (avoids weird loops)
+    if (location.pathname === "/admin/login" || location.pathname === "/admin/login/") {
+      return <>{children}</>;
+    }
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 

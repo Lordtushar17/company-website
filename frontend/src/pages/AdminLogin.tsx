@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { apiLogin } from "../lib/api";
+import { apiLogin, apiMe } from "../lib/api";
 
 export default function AdminLogin() {
   const [username, setUsername] = useState("");
@@ -9,15 +9,38 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from?.pathname || "/admin";
+
+  const rawFrom = (location.state as any)?.from?.pathname;
+  const safeFrom =
+    !rawFrom || rawFrom === "/admin/login" || rawFrom === "/admin/login/"
+      ? "/admin"
+      : rawFrom;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await apiLogin(username, password); // sets HTTP-only cookie
-      navigate(from, { replace: true });
+      // 1) perform login (this sets HTTP-only cookie)
+      await apiLogin(username, password);
+
+      // 2) immediately verify session with the backend (ensures cookie is sent & valid)
+      let me;
+      try {
+        me = await apiMe();
+        console.log("[login] apiMe after login:", me);
+      } catch (err) {
+        console.warn("[login] apiMe failed:", err);
+      }
+
+      // 3) if authenticated, navigate to dashboard; otherwise show error
+      if (me && me.authenticated) {
+        navigate(safeFrom, { replace: true });
+      } else {
+        // Rare: cookie didn't stick or me returned false. Show error and log details.
+        setError("Login succeeded but session not recognized — try again.");
+        console.error("[login] session not recognized after login. Response:", me);
+      }
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
