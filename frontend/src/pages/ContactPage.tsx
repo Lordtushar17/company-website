@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import ContactForm from "../adminpage/components/ContactForm";
 
 const ContactPage: React.FC = () => {
   useEffect(() => {
@@ -86,6 +87,23 @@ const ContactPage: React.FC = () => {
           </div> */}
         </div>
       </div>
+
+      <div className="w-full max-w-5xl mt-8 grid grid-cols-1 md:grid-cols-3 gap-8 ">
+  <div className="md:col-span-2 rounded-lg shadow-lg hover:shadow-2xl transition font-bold p-6 bg-white">
+    <ContactForm />
+  </div>
+
+  <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-2xl transition font-bold">
+    <h2 className="text-2xl font-bold mb-2 text-orange-500 text-center">Our Office</h2>
+    <p className="text-gray-700 text-lg text-center font-bold">
+      Yantrashilpa Technologies Pvt. Ltd., Phase-2
+      <br />
+      27/4/2, Dhayari-Narhe Rd,
+      <br />
+      Dhayari, Pune, Maharashtra 411041
+    </p>
+  </div>
+</div>
 
 
       {/* Embedded Map */}

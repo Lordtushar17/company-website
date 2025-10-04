@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { LogsAPI } from "../../api/logs";
 
 type ProductLog = {
   logId: string;
-  ts: string;          // ISO8601 UTC string from DynamoDB
+  ts: string; // ISO8601 UTC string from DynamoDB
   productId: string;
   action: string;
   user: string;
@@ -18,52 +18,58 @@ export default function LogsSection() {
 
   // --- filters ---
   const [search, setSearch] = useState("");
-  const [from, setFrom] = useState("");   // datetime-local value (local time)
+  const [from, setFrom] = useState(""); // datetime-local (local time)
   const [to, setTo] = useState("");
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const data = await LogsAPI.list();
-        setLogs(data);
-        setError(null);
-      } catch (e: any) {
-        setError(e?.message || "Failed to load logs");
-      } finally {
-        setLoading(false);
-      }
-    })();
+  // --- Load Logs from API ---
+  const loadLogs = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await LogsAPI.list();
+      setLogs(data);
+    } catch (e: any) {
+      setError(e?.message || "Failed to load logs");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Convert local datetime-local to comparable UTC ISO string for filtering
+  // --- Initial Load ---
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
+
+  // Convert local datetime-local to UTC ISO string for filtering
   const toUtcIso = (local: string) => {
     if (!local) return "";
     return new Date(local).toISOString();
   };
 
-  // Format UTC timestamp to Indian Standard Time in DD-MM-YYYY HH:mm:ss
+  // Format UTC → IST (DD-MM-YYYY HH:mm:ss)
   const formatIST = (utcIso: string) => {
     const d = new Date(utcIso);
-    return d.toLocaleString("en-IN", {
-      timeZone: "Asia/Kolkata",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false
-    }).replace(/,/g, ""); // remove comma between date and time
+    return d
+      .toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })
+      .replace(/,/g, "");
   };
 
-  // Combined filtering: text + date range
+  // --- Filters ---
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     const fromIso = from ? toUtcIso(from) : "";
-    const toIso   = to   ? toUtcIso(to)   : "";
+    const toIso = to ? toUtcIso(to) : "";
 
-    return logs.filter(l => {
+    return logs.filter((l) => {
       const matchText =
         !s ||
         l.productId.toLowerCase().includes(s) ||
@@ -71,8 +77,7 @@ export default function LogsSection() {
         l.details.toLowerCase().includes(s);
 
       const matchDate =
-        (!fromIso || l.ts >= fromIso) &&
-        (!toIso   || l.ts <= toIso);
+        (!fromIso || l.ts >= fromIso) && (!toIso || l.ts <= toIso);
 
       return matchText && matchDate;
     });
@@ -80,11 +85,12 @@ export default function LogsSection() {
 
   return (
     <div>
+      {/* --- Header / Filters / Reload --- */}
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between mb-4 gap-3">
         <h2 className="text-2xl font-bold">Product Update Logs</h2>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          {/* text search */}
+          {/* Search */}
           <input
             type="text"
             placeholder="Search by ID, action or details…"
@@ -93,7 +99,7 @@ export default function LogsSection() {
             className="border rounded px-3 py-1 w-64"
           />
 
-          {/* date range */}
+          {/* Date Range */}
           <label className="text-sm text-gray-600 flex flex-col">
             From:
             <input
@@ -112,6 +118,15 @@ export default function LogsSection() {
               onChange={(e) => setTo(e.target.value)}
             />
           </label>
+
+          {/* Reload Button */}
+          <button
+            onClick={loadLogs}
+            disabled={loading}
+            className="px-3 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 disabled:opacity-50"
+          >
+            {loading ? "Reloading…" : "Reload"}
+          </button>
         </div>
       </div>
 
@@ -122,6 +137,7 @@ export default function LogsSection() {
         </div>
       )}
 
+      {/* --- Logs Table --- */}
       <div className="bg-white rounded-lg shadow overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-100">
@@ -143,6 +159,7 @@ export default function LogsSection() {
                 <td className="p-2">{log.details}</td>
               </tr>
             ))}
+
             {!loading && filtered.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-4 text-center text-gray-500">

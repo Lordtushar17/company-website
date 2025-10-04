@@ -69,6 +69,7 @@ export default function Layout({
               { key: "products", label: "Products" },
               { key: "notice", label: "Notice" },
               { key: "logs", label: "Logs" },
+              { key: "contacts", label: "Contacts" },
               // { key: "analytics", label: "Analytics" },
             ].map((it) => (
               <button
