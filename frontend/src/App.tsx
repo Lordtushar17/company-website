@@ -16,6 +16,7 @@ import SiteNotice from "./components/SiteNotice";
 // pages
 import ProductsPage from "./pages/ProductsPage";
 import ContactPage from "./pages/ContactPage";
+import GalleryPage from "./pages/GalleryPage";   
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./adminpage/AdminDashboard";
 
@@ -35,11 +36,12 @@ const Home: React.FC = () => (
 );
 
 function App() {
-
   const location = useLocation();
-  const showHeader = !(
-    location.pathname === "/admin" || location.pathname.startsWith("/admin/")
-  ) || location.pathname === "/admin/login";
+  const showHeader =
+    !(
+      location.pathname === "/admin" ||
+      location.pathname.startsWith("/admin/")
+    ) || location.pathname === "/admin/login";
 
   return (
     <>
@@ -49,14 +51,15 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/contact" element={<ContactPage />} />
-        <Route path="/admin/login" element={<AdminLogin/>} />
-        <Route 
-          path="/admin" 
+        <Route path="/gallery" element={<GalleryPage />} /> 
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin"
           element={
             <ProtectedRoute>
-              <AdminDashboard/>
+              <AdminDashboard />
             </ProtectedRoute>
-            } 
+          }
         />
       </Routes>
 

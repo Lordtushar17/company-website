@@ -14,11 +14,9 @@ const Header: React.FC = () => {
     setHeaderHeight();
     window.addEventListener("resize", setHeaderHeight);
 
-    // optionally observe header size changes (if content changes dynamically)
     const RO: typeof ResizeObserver | undefined = (window as any).ResizeObserver;
     let ro: ResizeObserver | null = null;
 
-    
     const elem = headerRef.current;
     if (RO && elem) {
       ro = new RO(() => setHeaderHeight());
@@ -27,18 +25,17 @@ const Header: React.FC = () => {
 
     return () => {
       window.removeEventListener("resize", setHeaderHeight);
-      if (ro && elem) ro.unobserve(elem); 
+      if (ro && elem) ro.unobserve(elem);
     };
   }, []);
 
   const [open, setOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<
-    "home" | "about" | "products" | "contact"
+    "home" | "about" | "products" | "contact" | "gallery"
   >("home");
   const location = useLocation();
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Close menu on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -47,19 +44,20 @@ const Header: React.FC = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Update activeSection based on route (so /products or /contact are reflected)
+  // Update activeSection based on route
   useEffect(() => {
     if (location.pathname === "/products") {
       setActiveSection("products");
     } else if (location.pathname === "/contact") {
       setActiveSection("contact");
+    } else if (location.pathname === "/gallery") {
+      setActiveSection("gallery");
     } else {
-      // on homepage route, default to home (scroll-spy will update as user scrolls)
       setActiveSection("home");
     }
   }, [location.pathname]);
 
-  // Scroll spy using IntersectionObserver for #about and #products sections on the home page
+  // Scroll spy for homepage sections
   useEffect(() => {
     if (location.pathname !== "/") return;
 
@@ -109,7 +107,6 @@ const Header: React.FC = () => {
     setOpen(false);
     if (scrollToId) {
       if (location.pathname !== "/") {
-        // navigate to root first by setting hash; Home component will render
         window.location.hash = "/";
       }
       setTimeout(() => {
@@ -196,6 +193,20 @@ const Header: React.FC = () => {
                   }
                 >
                   Products
+                </NavLink>
+              </li>
+
+              {/* ✅ Gallery link added here */}
+              <li>
+                <NavLink
+                  to="/gallery"
+                  className={({ isActive }) =>
+                    isActive || activeSection === "gallery"
+                      ? "text-orange-400"
+                      : "hover:text-orange-500"
+                  }
+                >
+                  Gallery
                 </NavLink>
               </li>
 
@@ -302,6 +313,23 @@ const Header: React.FC = () => {
                 }
               >
                 Products
+              </NavLink>
+            </li>
+
+            {/* ✅ Gallery link added here (mobile) */}
+            <li>
+              <NavLink
+                to="/gallery"
+                onClick={() => setOpen(false)}
+                className={({ isActive }) =>
+                  `block px-3 py-2 rounded-md text-base font-medium ${
+                    isActive || activeSection === "gallery"
+                      ? "text-orange-400"
+                      : "text-gray-200 hover:text-orange-500"
+                  }`
+                }
+              >
+                Gallery
               </NavLink>
             </li>
 
