@@ -1,4 +1,3 @@
-// AdminDashboard.tsx
 import { useEffect, useState } from "react";
 import { Product } from "./types/product";
 import Layout from "./components/Layout";
@@ -11,6 +10,9 @@ import { ProductsAPI } from "../api/products";
 import NoticeSection from "./components/NoticeSection";
 import ContactsSection from "./components/ContactsSection";
 
+// --- NEW: import GallerySection component (to be created later) ---
+import GallerySection from "./components/GallerySection";
+
 // --- helpers to map API <-> UI shapes ---
 function normalizeProduct(api: any): Product {
   return {
@@ -18,9 +20,15 @@ function normalizeProduct(api: any): Product {
     title: api.title ?? "",
     shortDesc: api.shortDescription ?? api.shortDesc ?? "",
     longDesc: api.description ?? api.longDesc ?? "",
-    images: Array.isArray(api.images) ? api.images : api.imageUrl ? [api.imageUrl] : [],
+    images: Array.isArray(api.images)
+      ? api.images
+      : api.imageUrl
+      ? [api.imageUrl]
+      : [],
     orderId:
-      typeof api.orderId !== "undefined" && api.orderId !== null ? Number(api.orderId) : undefined,
+      typeof api.orderId !== "undefined" && api.orderId !== null
+        ? Number(api.orderId)
+        : undefined,
   };
 }
 
@@ -34,15 +42,21 @@ export default function AdminDashboard() {
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [section, setSection] = useState<"products" | "logs" | "notice" | "contacts">("products");
+
+  // --- UPDATED: added "gallery" section option ---
+  const [section, setSection] = useState<
+    "products" | "logs" | "notice" | "contacts" | "gallery"
+  >("products");
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sortByOrder = (a: Product, b: Product) => {
-    const A = typeof a.orderId === "number" ? a.orderId : Number.MAX_SAFE_INTEGER;
-    const B = typeof b.orderId === "number" ? b.orderId : Number.MAX_SAFE_INTEGER;
+    const A =
+      typeof a.orderId === "number" ? a.orderId : Number.MAX_SAFE_INTEGER;
+    const B =
+      typeof b.orderId === "number" ? b.orderId : Number.MAX_SAFE_INTEGER;
     return A - B;
   };
 
@@ -52,7 +66,9 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
         const data = await ProductsAPI.list();
-        const normalized = Array.isArray(data) ? data.map(normalizeProduct) : [];
+        const normalized = Array.isArray(data)
+          ? data.map(normalizeProduct)
+          : [];
         normalized.sort(sortByOrder);
         setProducts(normalized);
         setError(null);
@@ -115,7 +131,9 @@ export default function AdminDashboard() {
 
         const res = await ProductsAPI.update(editingId, toSend);
         const updated = normalizeProduct(unwrapItem(res));
-        setProducts((prev) => prev.map((p) => (p.productid === editingId ? updated : p)).sort(sortByOrder));
+        setProducts((prev) =>
+          prev.map((p) => (p.productid === editingId ? updated : p)).sort(sortByOrder)
+        );
       }
     } catch (e: any) {
       setError(e?.message || "Save failed");
@@ -134,7 +152,8 @@ export default function AdminDashboard() {
     }
   };
 
-  const productForPreview = previewId && products.find((p) => p.productid === previewId);
+  const productForPreview =
+    previewId && products.find((p) => p.productid === previewId);
 
   return (
     <Layout onNavigateSection={(key) => setSection(key as any)}>
@@ -178,7 +197,11 @@ export default function AdminDashboard() {
           <ProductFormModal
             open={formOpen}
             mode={formMode}
-            product={formMode === "edit" ? products.find((p) => p.productid === editingId) : undefined}
+            product={
+              formMode === "edit"
+                ? products.find((p) => p.productid === editingId)
+                : undefined
+            }
             onClose={() => setFormOpen(false)}
             onSave={saveProduct}
           />
@@ -188,6 +211,12 @@ export default function AdminDashboard() {
             onClose={() => setPreviewId(null)}
           />
         </>
+      )}
+
+      {section === "gallery" && (
+        <div>
+          <GallerySection />
+        </div>
       )}
 
       {section === "notice" && (
