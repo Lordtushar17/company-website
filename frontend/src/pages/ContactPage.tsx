@@ -41,7 +41,7 @@ const ContactPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
           {/* Left */}
           <div className="p-4 border rounded-lg shadow-sm hover:shadow-md transition">
-            <h3 className="text-lg font-bold mb-2 text-gray-900">New Systems</h3>
+            <h3 className="text-lg font-bold mb-2 text-gray-900">Enquiry for New Systems</h3>
                 <p className="text-black text-lg font-normal">info@yantrashilpa.com</p>
           </div>
 

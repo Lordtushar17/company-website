@@ -1,3 +1,4 @@
+// AdminDashboard.tsx
 import { useEffect, useState } from "react";
 import { Product } from "./types/product";
 import Layout from "./components/Layout";
@@ -6,6 +7,7 @@ import ProductFormModal from "./components/ProductFormModal";
 import ProductPreviewModal from "./components/ProductPreviewModal";
 import LogsSection from "./components/LogsSection";
 import { ProductsAPI } from "../api/products";
+
 import NoticeSection from "./components/NoticeSection";
 import ContactsSection from "./components/ContactsSection";
 
@@ -32,7 +34,7 @@ export default function AdminDashboard() {
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [section, setSection] = useState<"products"|"logs"|"notice"|"contacts">("products");
+  const [section, setSection] = useState<"products" | "logs" | "notice" | "contacts">("products");
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -44,7 +46,7 @@ export default function AdminDashboard() {
     return A - B;
   };
 
-  // Load from API on mount
+  // Load products on mount
   useEffect(() => {
     (async () => {
       try {
@@ -195,6 +197,7 @@ export default function AdminDashboard() {
       )}
 
       {section === "logs" && <LogsSection />}
+
       {section === "contacts" && <ContactsSection />}
     </Layout>
   );
