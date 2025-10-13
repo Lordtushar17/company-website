@@ -145,14 +145,15 @@ const ContactPage: React.FC = () => {
               <div className="mt-3 flex flex-col gap-2 text-sm">
                 <div className="flex items-center gap-2 text-gray-800">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-pink-500" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.36 11.36 0 003.55.57 1 1 0 011 1v3.59a1 1 0 01-1 1A19 19 0 013 5a1 1 0 011-1h3.6a1 1 0 011 1 11.36 11.36 0 00.57 3.55 1 1 0 01-.24 1.01l-2.31 2.23z"/></svg>
-                  <span className="text-gray-900 font-semibold">+91-9112211150</span>
+                  <span className="text-gray-900 font-semibold">+91-9112211142</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-800">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-pink-500" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.36 11.36 0 003.55.57 1 1 0 011 1v3.59a1 1 0 01-1 1A19 19 0 013 5a1 1 0 011-1h3.6a1 1 0 011 1 11.36 11.36 0 00.57 3.55 1 1 0 01-.24 1.01l-2.31 2.23z"/></svg>
                   <span className="text-gray-900 font-semibold">+91-9112211140</span>
                 </div>
-                <div className="mt-2 text-sm text-gray-600">
-                  <a href="mailto:info@yantrashilpa.com" className="text-orange-600 font-semibold">info@yantrashilpa.com</a>
+                <div className="mt-4 text-sm text-gray-600 -ml-8">
+                  <a href="mailto:info@yantrashilpa.com" className="text-orange-600 font-semibold">info@yantrashilpa.com</a><br />
+                  <a href="mailto:info@yantrashilpa.com" className="text-orange-600 font-semibold">ved.gawande@yantrashilpa.com</a>
                 </div>
               </div>
             </div>
